@@ -1,4 +1,4 @@
-collider_generator.py 
+collider_generator.py /n
 -Generate game ready colliders very fast nice ui
 
 dds-to-png.py
