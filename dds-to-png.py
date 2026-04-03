@@ -16,6 +16,7 @@ def convert_dds_to_png(folder_path, delete_original=False):
     converted_count = 0
     errors = 0
 
+    # 1. Convert files on disk
     for filename in os.listdir(folder_path):
         if filename.lower().endswith('.dds'):
             dds_path = os.path.join(folder_path, filename)
@@ -33,19 +34,29 @@ def convert_dds_to_png(folder_path, delete_original=False):
             except Exception as e:
                 print(f"Failed to convert {filename}. Error: {e}")
                 errors += 1
-        # After converting the files on the disk, tell Blender to use them:
-    for img in bpy.data.images:
-    # Check if the image currently uses a filepath ending in .dds
-        if img.filepath.lower().endswith('.dds'):
-        # Generate the new .png path
-            new_path = os.path.splitext(img.filepath)[0] + '.png'
-        
-        # Check if we actually created that file
-            if os.path.exists(bpy.path.abspath(new_path)):
-                img.filepath = new_path
-                img.reload() # Tells Blender to refresh the image in the viewport
 
-    return (True, f"Successfully converted {converted_count} files! (Errors: {errors})")
+    # 2. Map the new PNGs to Blender's materials
+    for img in bpy.data.images:
+        # Check if the image currently uses a filepath ending in .dds
+        if img.filepath.lower().endswith('.dds'):
+            # Generate the new .png path
+            new_path = os.path.splitext(img.filepath)[0] + '.png'
+            absolute_png_path = bpy.path.abspath(new_path)
+        
+            # Check if we actually created that file on the disk
+            if os.path.exists(absolute_png_path):
+                # Change the filepath
+                img.filepath = new_path
+                # FORCE Blender to change the source type to image (just in case)
+                img.source = 'FILE' 
+                
+                # This is the magic bullet: reload using the brand new path
+                try:
+                    img.reload()
+                except Exception as e:
+                     print(f"Blender failed to reload image {img.name}: {e}")
+
+    return (True, f"Successfully converted {converted_count} files and remapped materials! (Errors: {errors})")
 
 
 # ---------------------------------------------------------
